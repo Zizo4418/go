@@ -32,17 +32,13 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 		fd.readHook = trace.DidRead
 		fd.writeHook = trace.DidWrite
 		if (trace.DidCreateTCPConn != nil || trace.WillCloseTCPConn != nil) && len(net) >= 3 && net[0:3] == "tcp" {
-			// Ignore newRawConn errors (they're not possible in the current
-			// implementation, but even if they were, we don't want to
-			// affect socket operations for a trace hook invocation).
-			if c, err := newRawConn(fd); err == nil {
-				if trace.DidCreateTCPConn != nil {
-					trace.DidCreateTCPConn(c)
-				}
-				if trace.WillCloseTCPConn != nil {
-					fd.closeHook = func() {
-						trace.WillCloseTCPConn(c)
-					}
+			c := newRawConn(fd)
+			if trace.DidCreateTCPConn != nil {
+				trace.DidCreateTCPConn(c)
+			}
+			if trace.WillCloseTCPConn != nil {
+				fd.closeHook = func() {
+					trace.WillCloseTCPConn(c)
 				}
 			}
 		}
